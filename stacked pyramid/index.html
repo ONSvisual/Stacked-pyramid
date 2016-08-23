@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,600|Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+    <title>SP() auto</title>
+
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <link rel="stylesheet" href="../lib/globalStyle.css" />
+    <style type="text/css">
+        
+		#bar_0 { fill: #3fa9f5; }
+		#bar_1 { fill: #ff931e; }
+		#bar_2 { fill: #7ac943; }
+		#bar_3 { fill: #ff1d25; }
+	    
+    </style>
+</head>
+<body>
+
+	<div id="graphic">
+    	<img src="fallback.png" alt="[Chart]" />
+    </div>
+	    
+    <div id="keypoints">
+        <p></p>
+    </div>
+
+   <div class="footer">        
+   </div>
+    
+    <script src="../lib/d3.v3.5.min.js" type="text/javascript"></script>
+    <script src="../lib/modernizr.svg.min.js" type="text/javascript"></script>
+    <script src="../lib/pym.js" type="text/javascript"></script>
+    <script>
+
+		var graphic = d3.select('#graphic');
+		var keypoints = d3.select('#keypoints');
+		var footer = d3.select(".footer");
+		var pymChild = null;
+ 		var dvc = {}; 
+
+
+function drawGraphic(width)
+		{
+		   var threshold_md = 788;
+		   var threshold_sm = dvc.optional.mobileBreakpoint; 
+		  
+		  	//set variables for chart dimensions dependent on width of #graphic
+		    if (parseInt(graphic.style("width")) < threshold_sm) {     	
+												var margin = {	top: 	dvc.optional.margin_sm[0], 
+																right: 	dvc.optional.margin_sm[1], 
+																bottom: dvc.optional.margin_sm[2],
+																left: 	dvc.optional.margin_sm[3]
+															};
+												var size = 0;	// used for margin_centre and x_ticks		
+												var chart_width = parseInt(graphic.style("width")) - margin.left - margin.right;
+												var height = Math.ceil((chart_width * dvc.optional.aspectRatio_sm[1]) / dvc.optional.aspectRatio_sm[0]) - margin.top - margin.bottom;
+		    									}
+												
+			else if (parseInt(graphic.style("width")) < threshold_md){ 
+		        								var margin = {	top: 	dvc.optional.margin_md[0],
+																right: 	dvc.optional.margin_md[1],
+																bottom: dvc.optional.margin_md[2],
+																left: 	dvc.optional.margin_md[3]
+															};
+												var size = 1;			 
+												var chart_width = parseInt(graphic.style("width")) - margin.left - margin.right;
+		            							var height = Math.ceil((chart_width * dvc.optional.aspectRatio_md[1]) / dvc.optional.aspectRatio_md[0]) - margin.top - margin.bottom;
+												}
+												
+		  	 else {   
+		        								var margin = {	top: 	dvc.optional.margin_lg[0],
+																right: 	dvc.optional.margin_lg[1],
+																bottom: dvc.optional.margin_lg[2],
+																left: 	dvc.optional.margin_lg[3]
+															};
+												var size = 2;			
+												var chart_width = parseInt(graphic.style("width")) - margin.left - margin.right;
+		            							var height = Math.ceil((chart_width * dvc.optional.aspectRatio_lg[1]) / dvc.optional.aspectRatio_lg[0]) - margin.top - margin.bottom;
+												}
+			
+			if (chart_width + margin.left + margin.right > 800)
+			{ maxWidth = 800; chart_width = maxWidth - margin.left - margin.right } else	
+			{ maxWidth = chart_width + margin.left + margin.right	}
+			
+			//console.log("chart_width =" + chart_width + "  maxWidth =" + maxWidth +" height ="+ height);
+			
+			graphic_data = dvc.graphic_data_full;
+			//console.log("graphic_data :"+graphic_data+" gd0:"+ graphic_data[0] +" len:"+dvc.essential.graphic_data_url.length);
+				
+		    // clear out existing graphics
+		    graphic.selectAll("*").remove();
+			keypoints.selectAll("*").remove();
+			footer.selectAll("*").remove();
+			
+			// Get column names
+			colNames = d3.keys(graphic_data[0][0]).filter(function(key) { return key  !== "spine"; }); 
+			
+			 // parse data into columns
+			var rowTotal = [];
+		    var bars = {};
+			
+			for ( var LandR=0; LandR < dvc.essential.graphic_data_url.length; LandR++ ) {
+				bars[LandR] = [];
+				Maximum = 0;
+				rowTotal[LandR] = 0;
+				
+					graphic_data[LandR].forEach(function(d) {  //console.log("d ="+d);
+					
+							var counter = 0;
+							var x0 = 0;
+							d.vars = colNames.map(function(name){ //console.log("d[name] ="+name + "  "+ d[name] );
+							
+											Maximum += +d[name];
+											++counter;
+											if(counter == colNames.length){ 
+															if (Maximum > rowTotal[LandR] ) { rowTotal[LandR] = Maximum }
+																			Maximum = 0;
+																			counter = 0;  }
+							
+														//if (+d[name] > Maximum[LandR][name]){ Maximum[LandR][name] = d[name]}	
+										return {
+												name: name, 
+												x0: x0, 
+												x1: x0 += +d[name],
+												x2: d[name]
+												}; 
+							 });
+																		
+				});
+				
+						  
+		    }  // LandR loop
+			
+			//console.log("maxM ="+rowTotal[0] + "  maxF ="+rowTotal[1] );
+			var myMaximum;
+			if( rowTotal[0] > rowTotal[1] ) { myMaximum = rowTotal[0] } else { myMaximum = rowTotal[1] } 
+			myMaximum = Math.ceil(myMaximum / dvc.essential.multiplier) * dvc.essential.multiplier
+			//console.log("myMaxMulti =" + myMaximum );
+			
+			
+			// *****  !IMPORTANT  this sets the width of the two chart areas either side  *************
+			var halfChart_width = chart_width/2.3;
+			
+			var x = d3.scale.linear()
+				.domain([myMaximum,0])
+		        .range([0, halfChart_width ]);
+				
+				var x1 = d3.scale.linear()
+					.domain([0, myMaximum])
+					.range([0, halfChart_width]);
+
+			var y = d3.scale.ordinal()			// If this is ordinal I don't believe you can use ticks(). What goes between apples an oranges??
+					  .domain(graphic_data[0].map(function(d) { return d.spine; }))
+					  .rangeBands( [0, height], dvc.essential.barGap0_1)  
+			
+
+		    var yAxis = d3.svg.axis()
+		        .scale(y)
+		        .orient("left");
+			
+		    var x1Axis = d3.svg.axis()
+		        			.scale(x1)
+		        			.orient('bottom')
+							.ticks(dvc.optional.x_num_ticks_sm_md_lg[size]);
+				
+				 var xAxis = d3.svg.axis()
+								.scale(x)
+								.orient('bottom')
+								.ticks(dvc.optional.x_num_ticks_sm_md_lg[size]);
+								
+
+		//create svg 
+		    var svg = d3.select('#graphic')
+						 .append('svg')
+				         .attr("width", maxWidth)
+				         .attr("height", height + margin.top + margin.bottom + 20)  // adds a little extra
+				      		 // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			
+			var halfWidth =  margin.left + halfChart_width + dvc.essential.margin_centre[size]/2;
+			
+		//create chart left	
+			var svgL = d3.select('svg').append('g')
+			 			.attr("width", halfWidth )      
+				        .attr("height", height )  // + margin.top + margin.bottom 
+				        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+						
+					svgL.append("rect")
+						.attr("class","svgRect")
+						.attr("width", halfChart_width)
+						.attr("height", height);
+			    
+				    svgL.append('g')
+				        .attr('class', 'x axis')
+				        .attr("transform", "translate(0, "+height+")")
+				        .call(xAxis.tickSize(-height, 0) );
+					
+ 									var groupL = svgL.append('g').attr("class","bars").selectAll('.year') //svg.selectAll(".year")
+										  .data(graphic_data[0])
+										  .enter()
+										  .append("g")
+										  .attr("class", "bar") 
+										  .attr("transform", function(d) { return "translate( 0," + y(d.spine) + ")"; });
+									
+										groupL.selectAll("rect")
+										  .data(function(d) { return d.vars; })
+										  .enter()
+										  .append("rect")
+										  .attr("id", function(d,i){return "bar_" + i;} )
+										  .attr("height", y.rangeBand())
+										  .attr("x", function(d) { 
+													//console.log("xd.x0 =" + x(d.x0) + " xd.x1 =" + x(d.x1) + " xd.x2 =" + x(d.x2) );
+													return Math.abs(x(d.x0) + x(d.x2) - x(0));
+												})
+										  .attr("width", function(d) { 
+																	return Math.abs(x1(d.x2));
+										  							})
+										  .style("opacity", 0.85);
+										  
+					
+		var svgR = d3.select('svg').append('g')
+			 			.attr("width", (margin.left + (halfChart_width) + dvc.essential.margin_centre[size]/2 ) )   
+				        .attr("height", height )
+				        .attr("transform", "translate(" + ( margin.left + (halfChart_width) + dvc.essential.margin_centre[size] ) + "," + margin.top + ")");
+						
+					svgR.append("rect")
+						.attr("class","svgRect")
+						.attr("width", halfChart_width)
+						.attr("height", height);
+			    
+				    svgR.append('g')
+				        .attr('class', 'x axis')
+				        .attr("transform", "translate(0, "+height+")")
+				        .call(x1Axis.tickSize(-height, 0) );
+						
+					svgR
+						.append("text")
+						.attr("y", height + margin.top+margin.bottom + 10)
+						.attr("x",halfChart_width)
+						.attr("font-size", 12)
+						.attr("fill", "#666")
+						.style("text-anchor", "end")
+						.text(dvc.essential.xAxisLabel);  // no label
+
+					
+					//create y axis, if x axis doesn't start at 0 drop x axis accordingly	
+					svgR.append('g')
+				        .attr('class', 'y axis')
+				        .attr('transform', 'translate(' + ( - dvc.essential.margin_centre[size]/3 ) + ', 0)' )
+				        .call(yAxis);
+						
+						d3.select('g.y.axis').select('.domain').remove();					// removes y line
+						d3.select('g.y.axis').selectAll('.tick').select('line').remove();	// removes inner ticks
+						d3.select('g.y.axis').selectAll('.tick').select('text').style('text-anchor', 'middle');
+						
+			var groupR = svgR.append('g').attr("class","bars").selectAll('.year') 
+							  .data(graphic_data[1])
+							  .enter()
+							  .append("g")
+							  .attr("class", "bar")
+							  .attr("transform", function(d) { return "translate(0," + y(d.spine) + ")"; });
+							 
+							groupR.selectAll("rect")
+							  .data(function(d) { return d.vars; })
+							  .enter()
+							  .append("g")
+							  .append("rect")
+							  .attr("id",function(d,i){return "bar_" + i})
+							  .attr("x", function(d) {
+													return Math.abs( x1(d.x0) );  //return Math.abs(x1(d.x1) - x1(d.x2));
+													})  
+							  .attr("width", function(d) { //console.log("Right Data" + d.x2 + "  x1:" + x1(d.x2));
+													return Math.abs(x1(d.x2)); 
+							  })
+							  .attr("height", y.rangeBand())
+							  .style("opacity", 0.85);
+
+			
+			d3.select('svg').append("g")
+						.attr("class","sortme")
+						.attr("id",'cPanel')
+						.selectAll("g")
+						.data(colNames)
+						.enter()
+						.append("rect")
+						.attr("width", 20)
+						.attr("height", 20)
+						.attr("x", x(dvc.essential.legendXY[0]) )
+						.attr("y", function(d,i) {
+													 return (y(dvc.essential.legendXY[1]) + 27*i);
+												})
+						.attr("id",function(d,i){return "bar_" + i})
+						.attr('cursor', 'pointer');
+			
+		// text labels			
+		d3.select('svg').append("g")
+						.attr("class","placeLabel")
+						.attr("font-size",11)
+						.attr("colour","#999")
+						.selectAll("g")
+						.data(colNames)
+						.enter()
+						.append("text")
+						.attr("x", x(dvc.essential.legendXY[0]) + 32 )
+						.attr("y", function(d,i) {
+													 return (y(dvc.essential.legendXY[1]) + 14 + 27*i);
+												})
+						.text(function(d){  return d; });		
+					
+					
+		writeAnnotation();
+							
+	function writeAnnotation(){
+	
+		if (graphic.style("width") < threshold_sm) {
+			
+				dvc.essential.annotationBullet.forEach(function(d,i) {
+				
+					d3.select("#keypoints").append("svg")
+						.attr("width","20px")
+						.attr("height","20px")
+						.attr("class","circles")
+						.append("circle")
+						.attr("class", "annocirc" + (i))
+						.attr("r", "2")
+						.attr('cy',"12px")
+						.attr("cx", "10px");
+					
+					d3.select("#keypoints").append("p").text(dvc.essential.annotationBullet[i]);
+				
+				})// end foreach
+		}		
+		else {
+			
+				dvc.essential.annotationChart.forEach(function(d,i) {	
+				
+					// draw annotation text based on content of var annotationArray ...
+					
+					svg.append("text")
+						.text(dvc.essential.annotationChart[i])
+						.attr("class","annotext" + i)
+						.attr("text-anchor", dvc.essential.annotationAlign[i])
+						.attr('y',y(dvc.essential.annotationXY[i][1]))
+						.attr('x', function(){  if(i == 0) { 	return x(dvc.essential.annotationXY[i][0] );  }
+														else {	return x1(dvc.essential.annotationXY[i][0] );  }
+														  })
+						.attr("transform", function(){ if(i == 0) { return "translate(0, 0) ";	}
+													else { return "translate(" + ( margin.left + (halfChart_width) + dvc.essential.margin_centre[size] ) + ", 0) "; }
+													});
+								
+					d3.selectAll(".annotext" + (i))
+						.each(insertLinebreaks)
+						.each(createBackRect);	
+						
+						
+					function insertLinebreaks() {
+						
+						var str = this;
+	
+						var el1 = dvc.essential.annotationChart[i];
+						var el = el1.data;
+				
+						var words = el1.split('  ');
+						
+						d3.select(this/*str*/).text('');
+					
+						for (var j = 0; j < words.length; j++) {
+							var tspan = d3.select(this).append('tspan').text(words[j]);
+							if (j > 0)
+								tspan.attr('x', x(dvc.essential.annotationXY[i][0])).attr('dy', '22');													
+						}
+					};					
+											
+					function createBackRect() {
+						
+					var BBox = this.getBBox()
+							svg.insert("rect", ".annotext" + (i))
+								.attr("width", BBox.width)
+								.attr("height", BBox.height)
+								.attr("x", BBox.x)
+								.attr("y", BBox.y)
+								.attr("fill", "white")
+								.attr("opacity", 0.4)
+								.attr("transform", function(){ if(i == 0) { return "translate(0, 0) ";	}
+													else { return "translate(" + ( margin.left + (halfChart_width) + dvc.essential.margin_centre[size] ) + ", 0) "; }
+													});;
+								
+					}; // end function createBackRect()
+
+				});	// end foreach 		
+			
+		} // end else ... 
+		
+		// If you have labels rather than years then you can split the lines using a double space (in the CSV file).
+	
+		function insertLinebreaksLabels() {
+						var str = this.textContent;
+	
+						var words = str.split('  ');
+						
+						d3.select(this/*str*/).text('');
+					
+						for (var j = 0; j < words.length; j++) {
+							var tspan = d3.select(this).append('tspan').text(words[j]);
+							if (j > 0)
+								tspan
+								.attr('x', -10)			
+								.attr('dy', '1em');													
+								}
+		};	
+		
+		d3.selectAll(".y text").each(insertLinebreaksLabels)
+		
+		
+	}// end function writeAnnotation()
+							
+			//create link to source				
+			d3.select(".footer").append("p")
+				.text("Source: ")
+				.append("a")
+				.attr("href", dvc.essential.sourceURL)
+				.attr("target", "_blank")
+				.html(dvc.essential.sourceText);
+						
+			//use pym to calculate chart dimensions	
+		    if (pymChild) {
+		        pymChild.sendHeight();
+		    }
+			
+			
+		} // ends function drawGraphic
+		
+
+	//check whether browser can cope with svg	
+	if (Modernizr.svg) {
+			var intrim;
+		   //load config 
+			d3.json("config.json", function(error, json) {
+															dvc = json;
+															
+				//load chart data in series because we'd need to call a function to hand over the config data 
+				
+						var remaining = dvc.essential.graphic_data_url.length;  //, foo, bar;
+								dvc.graphic_data_full = [];
+									
+									//var path1 = "../data/" + dvc.essential.graphic_data_url[0];
+									//var path2 = "../data/" + dvc.essential.graphic_data_url[1];
+									
+									  d3.csv(dvc.essential.graphic_data_url[0], function(csv) { //console.log("male "+remaining);
+																dvc.graphic_data_full[0] = csv;
+																if (!--remaining) pymChild = new pym.Child({renderCallback: drawGraphic});
+																		  });
+									
+									  d3.csv(dvc.essential.graphic_data_url[1], function(csv) { // console.log("female "+remaining);
+																dvc.graphic_data_full[1] = csv;
+																if (!--remaining) pymChild = new pym.Child({renderCallback: drawGraphic});
+																		  });
+							});  // ends config read
+			
+					}
+						else {
+							 //use pym to create iframe containing fallback image (which is set as default)
+							 pymChild = new pym.Child();
+							if (pymChild) {
+								pymChild.sendHeight();
+							}
+	}
+		
+    </script>
+</body>
+</html>

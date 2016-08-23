@@ -1,0 +1,40 @@
+{
+    "essential" : {
+            "graphic_data_url": ["male.csv", "female.csv"],
+        
+            "dateFormat":"%Y",
+            "legendXY":["1000", "70-74"],
+            "legendLabels" : [],
+        
+            "sourceText":["Health Statistics"],
+            "sourceURL":["http://www.ons.gov.uk"],
+        
+            "annotationChart": ["Male" , "Female"],
+            "annotationBullet": [],
+            "annotationXY":[["800", "35-39"], ["800", "35-39"]],
+            "annotationAlign":["Middle"],
+        
+            "xAxisLabel":"Number of deaths",
+            "xAxisScale":[],
+            "multiplier": 100,
+            "barGap0_1": 0.2,
+            "margin_centre": [40, 60, 60]
+    },
+    "optional" : {
+            "margin_sm": [5, 20, 20, 20],
+            "margin_md": [5, 20, 20, 20],
+            "margin_lg": [5, 20, 20, 20],
+        
+            "aspectRatio_sm" : [4,5],
+            "aspectRatio_md" : [1,1],
+            "aspectRatio_lg" : [12,8],
+        
+            "mobileBreakpoint" : 510, 
+                           
+            "x_num_ticks_sm_md_lg" : [3,6,6],
+            "centre_line" : false,
+            "centre_line_value" : 0
+    }
+}
+
+
