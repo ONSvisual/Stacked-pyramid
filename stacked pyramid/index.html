@@ -11,15 +11,10 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
     <link rel="stylesheet" href="../lib/globalStyle.css" />
-    <style type="text/css">
-        
-		#bar_0 { fill: #3fa9f5; }
-		#bar_1 { fill: #ff931e; }
-		#bar_2 { fill: #7ac943; }
-		#bar_3 { fill: #ff1d25; }
-	    
-    </style>
+    
 </head>
+
+
 <body>
 
 	<div id="graphic">
@@ -84,19 +79,22 @@ function drawGraphic(width)
 		            							var height = Math.ceil((chart_width * dvc.optional.aspectRatio_lg[1]) / dvc.optional.aspectRatio_lg[0]) - margin.top - margin.bottom;
 												}
 			
-			if (chart_width + margin.left + margin.right > 800)
-			{ maxWidth = 800; chart_width = maxWidth - margin.left - margin.right } else	
+			if (parseInt(graphic.style("width")) > 800)
+												{  maxWidth = 800; chart_width = maxWidth - margin.left - margin.right;
+												var height = Math.ceil((chart_width * dvc.optional.aspectRatio_lg[1]) / dvc.optional.aspectRatio_lg[0]) - margin.top - margin.bottom;} else	
 			{ maxWidth = chart_width + margin.left + margin.right	}
-			
 			//console.log("chart_width =" + chart_width + "  maxWidth =" + maxWidth +" height ="+ height);
 			
 			graphic_data = dvc.graphic_data_full;
-			//console.log("graphic_data :"+graphic_data+" gd0:"+ graphic_data[0] +" len:"+dvc.essential.graphic_data_url.length);
 				
 		    // clear out existing graphics
 		    graphic.selectAll("*").remove();
 			keypoints.selectAll("*").remove();
 			footer.selectAll("*").remove();
+			
+			
+			// get colours
+			keycolour = dvc.essential.legendColour;
 			
 			// Get column names
 			colNames = d3.keys(graphic_data[0][0]).filter(function(key) { return key  !== "spine"; }); 
@@ -190,29 +188,30 @@ function drawGraphic(width)
 				        .attr("height", height )  // + margin.top + margin.bottom 
 				        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 						
-					svgL.append("rect")
-						.attr("class","svgRect")
-						.attr("width", halfChart_width)
-						.attr("height", height);
 			    
 				    svgL.append('g')
 				        .attr('class', 'x axis')
 				        .attr("transform", "translate(0, "+height+")")
 				        .call(xAxis.tickSize(-height, 0) );
 					
- 									var groupL = svgL.append('g').attr("class","bars").selectAll('.year') //svg.selectAll(".year")
-										  .data(graphic_data[0])
+ 						   var groupL = svgL.append('g')
+											.attr("class", "bars")
+											.selectAll('.bars') //svg.selectAll(".year")
+										   .data(graphic_data[0])
 										  .enter()
 										  .append("g")
-										  .attr("class", "bar") 
+										  //.attr("class", "indBar")
+										  .attr("id", function(d,i){return "bargroupL" + i;} )
 										  .attr("transform", function(d) { return "translate( 0," + y(d.spine) + ")"; });
 									
 										groupL.selectAll("rect")
 										  .data(function(d) { return d.vars; })
 										  .enter()
 										  .append("rect")
-										  .attr("id", function(d,i){return "bar_" + i;} )
+										  .attr("class", "indBar")
+										  .attr("id", function(d,i){return "barL" + i;} )
 										  .attr("height", y.rangeBand())
+										  .attr("fill", function(d,i) { return keycolour[i]; })
 										  .attr("x", function(d) { 
 													//console.log("xd.x0 =" + x(d.x0) + " xd.x1 =" + x(d.x1) + " xd.x2 =" + x(d.x2) );
 													return Math.abs(x(d.x0) + x(d.x2) - x(0));
@@ -228,10 +227,11 @@ function drawGraphic(width)
 				        .attr("height", height )
 				        .attr("transform", "translate(" + ( margin.left + (halfChart_width) + dvc.essential.margin_centre[size] ) + "," + margin.top + ")");
 						
-					svgR.append("rect")
-						.attr("class","svgRect")
-						.attr("width", halfChart_width)
-						.attr("height", height);
+//					svgR.append("rect")
+//						.attr("class","svgRectR")
+//						.attr("width", halfChart_width)
+//						.attr("height", height)
+//						.attr("fill", "#fff");
 			    
 				    svgR.append('g')
 				        .attr('class', 'x axis')
@@ -258,19 +258,22 @@ function drawGraphic(width)
 						d3.select('g.y.axis').selectAll('.tick').select('line').remove();	// removes inner ticks
 						d3.select('g.y.axis').selectAll('.tick').select('text').style('text-anchor', 'middle');
 						
-			var groupR = svgR.append('g').attr("class","bars").selectAll('.year') 
+			var groupR = svgR.append('g')
+							  .attr("class","bars")
+							  .selectAll('.bars') 
 							  .data(graphic_data[1])
 							  .enter()
 							  .append("g")
-							  .attr("class", "bar")
+							  .attr("id", function(d,i){return "bargroupR" + i;} )
 							  .attr("transform", function(d) { return "translate(0," + y(d.spine) + ")"; });
 							 
 							groupR.selectAll("rect")
 							  .data(function(d) { return d.vars; })
 							  .enter()
-							  .append("g")
 							  .append("rect")
-							  .attr("id",function(d,i){return "bar_" + i})
+							  .attr("class", "indBar")
+							  .attr("id", function(d,i){return "barR" + i})
+							  .attr("fill", function(d,i) { return keycolour[i]; })
 							  .attr("x", function(d) {
 													return Math.abs( x1(d.x0) );  //return Math.abs(x1(d.x1) - x1(d.x2));
 													})  
@@ -282,20 +285,29 @@ function drawGraphic(width)
 
 			
 			d3.select('svg').append("g")
-						.attr("class","sortme")
 						.attr("id",'cPanel')
 						.selectAll("g")
 						.data(colNames)
 						.enter()
 						.append("rect")
+						.attr("class","sortme")
 						.attr("width", 20)
 						.attr("height", 20)
+						.attr("fill", function(d,i) { return keycolour[i]; })
+						.style("opacity", 0.85)
 						.attr("x", x(dvc.essential.legendXY[0]) )
 						.attr("y", function(d,i) {
 													 return (y(dvc.essential.legendXY[1]) + 27*i);
 												})
-						.attr("id",function(d,i){return "bar_" + i})
-						.attr('cursor', 'pointer');
+						.attr("id", function(d,i){return "sqr" + i})
+						.attr('cursor', 'pointer')
+						.on("mouseover",function(){ 
+													showlight(this);
+												  })
+						.on("mouseout", function(){ 
+													 d3.selectAll('.indBar').style('opacity', 0.85);
+													 d3.selectAll(".sortme").style("opacity", 1); 
+												});;
 			
 		// text labels			
 		d3.select('svg').append("g")
@@ -314,7 +326,25 @@ function drawGraphic(width)
 					
 					
 		writeAnnotation();
-							
+	
+	
+	function showlight(evt) {
+		
+				d3.selectAll('.indBar').style('opacity', 0.2);
+				d3.selectAll('.sortme').style('opacity', 0.2);
+			
+				evtId = d3.select(evt).attr("id");
+				show = evtId.substring(3,4);
+				//console.log(evtId+"  "+show); // show+ 
+				
+				d3.selectAll("#barL"+show).style('opacity', 0.85);
+				d3.selectAll("#barR"+show).style('opacity', 0.85);
+				d3.select("#sqr"+show).style('opacity', 1);
+				
+		}
+
+
+						
 	function writeAnnotation(){
 	
 		if (graphic.style("width") < threshold_sm) {
@@ -433,7 +463,7 @@ function drawGraphic(width)
 		    }
 			
 			
-		} // ends function drawGraphic
+	} // ends function drawGraphic
 		
 
 	//check whether browser can cope with svg	

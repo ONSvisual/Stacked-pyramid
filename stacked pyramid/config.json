@@ -5,8 +5,9 @@
             "dateFormat":"%Y",
             "legendXY":["1000", "70-74"],
             "legendLabels" : [],
+            "legendColour" : ["#3fa9f5","#ff931e","#7ac943","#ff1d25"],
         
-            "sourceText":["Health Statistics"],
+            "sourceText":["link source"],
             "sourceURL":["http://www.ons.gov.uk"],
         
             "annotationChart": ["Male" , "Female"],
