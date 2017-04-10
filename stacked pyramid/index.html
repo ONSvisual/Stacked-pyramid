@@ -307,11 +307,9 @@ function drawGraphic(width)
 						.on("mouseout", function(){ 
 													 d3.selectAll('.indBar').style('opacity', 0.85);
 													 d3.selectAll(".sortme").style("opacity", 1); 
-												});;
-			
+												});;			
 		// text labels			
 		d3.select('svg').append("g")
-						.attr("class","placeLabel")
 						.attr("font-size",11)
 						.attr("colour","#999")
 						.selectAll("g")
@@ -322,7 +320,19 @@ function drawGraphic(width)
 						.attr("y", function(d,i) {
 													 return (y(dvc.essential.legendXY[1]) + 14 + 27*i);
 												})
-						.text(function(d){  return d; });		
+						.text(function(d){  return d; })
+						.attr("class","placeLabel")
+						.attr("id", function(d,i){return "lab" + i})
+						.attr('cursor', 'pointer')
+						.on("mouseover",function(){ 
+													showlight(this);
+												  })
+						.on("mouseout", function(){ 
+													 d3.selectAll('.indBar').style('opacity', 0.85);
+													 d3.selectAll(".sortme").style("opacity", 1);
+													 d3.selectAll(".placeLabel").style("opacity", 1);
+												});
+					
 					
 					
 		writeAnnotation();
@@ -332,6 +342,7 @@ function drawGraphic(width)
 		
 				d3.selectAll('.indBar').style('opacity', 0.2);
 				d3.selectAll('.sortme').style('opacity', 0.2);
+				d3.selectAll('.placeLabel').style('opacity', 0.2);
 			
 				evtId = d3.select(evt).attr("id");
 				show = evtId.substring(3,4);
@@ -340,6 +351,7 @@ function drawGraphic(width)
 				d3.selectAll("#barL"+show).style('opacity', 0.85);
 				d3.selectAll("#barR"+show).style('opacity', 0.85);
 				d3.select("#sqr"+show).style('opacity', 1);
+				d3.select("#lab"+show).style('opacity', 1);
 				
 		}
 
